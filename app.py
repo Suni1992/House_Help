@@ -236,9 +236,13 @@ if submit:
                 index=False
             )
 
-        spreadsheet_id = os.getenv("1NXR6PSGa7DVwvPfcWgf8fqH9HxNe5F9up0pB07rFLSE") or (
-            st.secrets.get("google_sheets_spreadsheet_id") if hasattr(st, "secrets") else None
-        )
+        spreadsheet_id = os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID")
+        
+        if not spreadsheet_id:
+            try:
+                spreadsheet_id = st.secrets.get("google_sheets_spreadsheet_id")
+            except Exception:
+                spreadsheet_id = None
 
         if spreadsheet_id:
             try:
