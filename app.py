@@ -1,7 +1,11 @@
-import streamlit as st
-import pandas as pd
-from datetime import datetime
+import json
 import os
+from datetime import datetime
+
+import gspread
+import pandas as pd
+import streamlit as st
+from google.oauth2.service_account import Credentials
 
 st.set_page_config(
     page_title="FixMyHome",
@@ -111,8 +115,51 @@ with c4:
 st.write("")
 
 # -------------------
-# FORM
+# Google Sheets helpers
 # -------------------
+
+def load_google_sheets_credentials():
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+
+    # 1. Prefer JSON content from an environment variable.
+    account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+
+    # 2. Fallback to a JSON file in the workspace.
+    if not account_json:
+        for path in ("service_account.json", "google_service_account.json"):
+            if os.path.exists(path):
+                return Credentials.from_service_account_file(path, scopes=scopes)
+
+    # 3. Fallback to Streamlit secrets if available.
+    if hasattr(st, "secrets") and st.secrets.get("google_service_account"):
+        account_json = st.secrets["google_service_account"]
+
+    if account_json:
+        if isinstance(account_json, str):
+            return Credentials.from_service_account_info(json.loads(account_json), scopes=scopes)
+        return Credentials.from_service_account_info(account_json, scopes=scopes)
+
+    return None
+
+
+def get_google_sheet_client():
+    creds = load_google_sheets_credentials()
+    if creds is None:
+        return None
+    return gspread.authorize(creds)
+
+
+def append_lead_to_sheet(sheet_id, lead_row):
+    client = get_google_sheet_client()
+    if client is None:
+        raise RuntimeError(
+            "Google Sheets credentials not found. Set GOOGLE_SERVICE_ACCOUNT_JSON or provide service_account.json."
+        )
+
+    spreadsheet = client.open_by_key(sheet_id)
+    worksheet = spreadsheet.sheet1
+    worksheet.append_row(lead_row, value_input_option="USER_ENTERED")
+
 
 st.markdown('<div class="form-box">', unsafe_allow_html=True)
 
@@ -189,9 +236,40 @@ if submit:
                 index=False
             )
 
-        st.success(
-            "✅ Request Submitted Successfully. We will contact you shortly."
+        spreadsheet_id = os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID") or (
+            st.secrets.get("google_sheets_spreadsheet_id") if hasattr(st, "secrets") else None
         )
+
+        if spreadsheet_id:
+            try:
+                append_lead_to_sheet(
+                    spreadsheet_id,
+                    [
+                        datetime.now().strftime("%d-%m-%Y %H:%M"),
+                        service,
+                        name,
+                        mobile,
+                        city,
+                        requirement,
+                        "New",
+                    ],
+                )
+                st.success(
+                    "✅ Request Submitted Successfully. We will contact you shortly."
+                )
+                st.info("Google Sheet updated successfully.")
+            except Exception as gsheet_error:
+                st.warning(
+                    "Saved locally, but Google Sheets sync failed. Check credentials and sheet ID."
+                )
+                st.error(str(gsheet_error))
+        else:
+            st.success(
+                "✅ Request Submitted Successfully. We will contact you shortly."
+            )
+            st.info(
+                "To sync leads to Google Sheets, set GOOGLE_SHEETS_SPREADSHEET_ID and Google credentials."
+            )
 
 # -------------------
 # TRUST SECTION
