@@ -122,7 +122,7 @@ def load_google_sheets_credentials():
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
     # 1. Prefer JSON content from an environment variable.
-    account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+    account_json = os.getenv("massive-period-472206-a7-a686fb847cb6.json")
 
     # 2. Fallback to a JSON file in the workspace.
     if not account_json:
@@ -236,7 +236,7 @@ if submit:
                 index=False
             )
 
-        spreadsheet_id = os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID") or (
+        spreadsheet_id = os.getenv("1NXR6PSGa7DVwvPfcWgf8fqH9HxNe5F9up0pB07rFLSE") or (
             st.secrets.get("google_sheets_spreadsheet_id") if hasattr(st, "secrets") else None
         )
 
