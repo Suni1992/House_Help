@@ -7,6 +7,8 @@ import pandas as pd
 import streamlit as st
 from google.oauth2.service_account import Credentials
 
+DEFAULT_GOOGLE_SHEETS_SPREADSHEET_ID = "1NXR6PSGa7DVwvPfcWgf8fqH9HxNe5F9up0pB07rFLSE"
+
 st.set_page_config(
     page_title="FixMyHome",
     page_icon="🏠",
@@ -122,11 +124,15 @@ def load_google_sheets_credentials():
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
     # 1. Prefer JSON content from an environment variable.
-    account_json = "service_account.json"
+    account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
 
     # 2. Fallback to a JSON file in the workspace.
     if not account_json:
-        for path in ("service_account.json", "google_service_account.json"):
+        for path in (
+            "service_account.json",
+            "google_service_account.json",
+            "GOOGLE_SERVICE_ACCOUNT_JSON.json",
+        ):
             if os.path.exists(path):
                 return Credentials.from_service_account_file(path, scopes=scopes)
 
@@ -243,6 +249,9 @@ if submit:
                 spreadsheet_id = st.secrets.get("google_sheets_spreadsheet_id")
             except Exception:
                 spreadsheet_id = None
+
+        if not spreadsheet_id:
+            spreadsheet_id = DEFAULT_GOOGLE_SHEETS_SPREADSHEET_ID
 
         if spreadsheet_id:
             try:
