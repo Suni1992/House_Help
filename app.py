@@ -175,23 +175,26 @@ if submit:
             "Status":"New"
         }])
 
-        if os.path.exists(CSV_FILE_PATH):
-            lead.to_csv(
-                CSV_FILE_PATH,
-                mode="a",
-                header=False,
-                index=False
-            )
-        else:
-            lead.to_csv(
-                CSV_FILE_PATH,
-                index=False
-            )
+        try:
+            if os.path.exists(CSV_FILE_PATH):
+                lead.to_csv(
+                    CSV_FILE_PATH,
+                    mode="a",
+                    header=False,
+                    index=False
+                )
+            else:
+                lead.to_csv(
+                    CSV_FILE_PATH,
+                    index=False
+                )
 
-        st.success(
-            "✅ Request Submitted Successfully. We will contact you shortly."
-        )
-        st.info("Your request has been saved and we will contact you soon.")
+            st.success(
+                "✅ Request Submitted Successfully. We will contact you shortly."
+            )
+            st.info(f"Your request has been saved to {CSV_FILE_PATH}")
+        except Exception as e:
+            st.error(f"Error saving data: {str(e)}")
 
 # -------------------
 # TRUST SECTION
