@@ -122,7 +122,7 @@ def load_google_sheets_credentials():
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
     # 1. Prefer JSON content from an environment variable.
-    account_json = service_account
+    account_json = "service_account.json"
 
     # 2. Fallback to a JSON file in the workspace.
     if not account_json:
