@@ -8,7 +8,6 @@ __pycache__/
 
 # Streamlit and local data
 leads.csv
-lead.csv
 
 # Google service account credentials
 service_account.json
