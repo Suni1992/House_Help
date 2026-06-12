@@ -236,7 +236,7 @@ if submit:
                 index=False
             )
 
-        spreadsheet_id = os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID")
+        spreadsheet_id = os.getenv("1NXR6PSGa7DVwvPfcWgf8fqH9HxNe5F9up0pB07rFLSE")
         
         if not spreadsheet_id:
             try:
