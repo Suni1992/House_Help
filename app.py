@@ -1,274 +1,164 @@
-import os
-from datetime import datetime
-
-import pandas as pd
 import streamlit as st
+import sqlite3
+from datetime import datetime
+import pandas as pd
 
-# Get the directory where this script is located
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-CANONICAL_CSV_FILE_PATH = os.path.join(SCRIPT_DIR, "leads.csv")
-LEGACY_CSV_FILE_PATH = os.path.join(SCRIPT_DIR, "lead.csv")
-
-
-def migrate_legacy_csv():
-    """Migrate data from legacy lead.csv to canonical leads.csv."""
-    if not os.path.exists(LEGACY_CSV_FILE_PATH):
-        return CANONICAL_CSV_FILE_PATH
-
-    if not os.path.exists(CANONICAL_CSV_FILE_PATH):
-        try:
-            os.replace(LEGACY_CSV_FILE_PATH, CANONICAL_CSV_FILE_PATH)
-            return CANONICAL_CSV_FILE_PATH
-        except Exception:
-            return CANONICAL_CSV_FILE_PATH
-
-    try:
-        legacy_df = pd.read_csv(LEGACY_CSV_FILE_PATH)
-    except Exception:
-        legacy_df = None
-
-    if legacy_df is not None and not legacy_df.empty:
-        try:
-            canonical_df = pd.read_csv(CANONICAL_CSV_FILE_PATH)
-            combined_df = pd.concat([canonical_df, legacy_df], ignore_index=True)
-            combined_df = combined_df.drop_duplicates()
-            combined_df.to_csv(CANONICAL_CSV_FILE_PATH, index=False)
-        except Exception:
-            pass
-
-    try:
-        os.remove(LEGACY_CSV_FILE_PATH)
-    except Exception:
-        pass
-
-    return CANONICAL_CSV_FILE_PATH
-
-
-CSV_FILE_PATH = migrate_legacy_csv()
-
+# -----------------------------
+# PAGE CONFIG
+# -----------------------------
 st.set_page_config(
     page_title="FixMyHome",
     page_icon="🏠",
     layout="wide"
 )
 
-# Debug sidebar
-with st.sidebar:
-    st.write("**Debug Info**")
-    st.write(f"CSV Path: {CSV_FILE_PATH}")
-    st.write(f"File exists: {os.path.exists(CSV_FILE_PATH)}")
+# -----------------------------
+# DATABASE
+# -----------------------------
+conn = sqlite3.connect("leads.db", check_same_thread=False)
+cursor = conn.cursor()
 
-# -------------------
-# CSS
-# -------------------
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS leads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT,
+    service TEXT,
+    name TEXT,
+    mobile TEXT,
+    city TEXT,
+    requirement TEXT,
+    status TEXT
+)
+""")
 
-st.markdown("""
-<style>
+conn.commit()
 
-.stApp{
-    background:#f5f7fb;
-}
-
-.main-title{
-    text-align:center;
-    font-size:55px;
-    font-weight:700;
-}
-
-.sub-title{
-    text-align:center;
-    font-size:20px;
-    color:gray;
-    margin-bottom:30px;
-}
-
-.service-card{
-    background:white;
-    padding:20px;
-    border-radius:15px;
-    text-align:center;
-    box-shadow:0px 3px 12px rgba(0,0,0,0.10);
-}
-
-.form-box{
-    background:white;
-    padding:25px;
-    border-radius:20px;
-    box-shadow:0px 5px 15px rgba(0,0,0,0.10);
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-# -------------------
+# -----------------------------
 # HEADER
-# -------------------
+# -----------------------------
+st.title("🏠 FixMyHome")
+st.subheader("Find Trusted Home Service Professionals")
 
-st.markdown(
-"""
-<div class="main-title">
-🏠 FixMyHome
-</div>
-
-<div class="sub-title">
-Book Trusted Home Service Professionals
-</div>
-""",
-unsafe_allow_html=True
+st.write(
+    """
+    Book verified professionals for:
+    - Electrician
+    - Plumber
+    - Carpenter
+    - AC Repair
+    - Painter
+    - Cleaning
+    """
 )
 
-# -------------------
-# SERVICES
-# -------------------
+# -----------------------------
+# LEAD FORM
+# -----------------------------
+with st.form("lead_form"):
 
-st.subheader("Popular Services")
+    service = st.selectbox(
+        "Select Service",
+        [
+            "Electrician",
+            "Plumber",
+            "Carpenter",
+            "AC Repair",
+            "Painter",
+            "Cleaning"
+        ]
+    )
 
-c1,c2,c3,c4 = st.columns(4)
-
-with c1:
-    st.markdown("""
-    <div class="service-card">
-    ⚡<br><br>
-    Electrician
-    </div>
-    """, unsafe_allow_html=True)
-
-with c2:
-    st.markdown("""
-    <div class="service-card">
-    🔧<br><br>
-    Plumber
-    </div>
-    """, unsafe_allow_html=True)
-
-with c3:
-    st.markdown("""
-    <div class="service-card">
-    🪚<br><br>
-    Carpenter
-    </div>
-    """, unsafe_allow_html=True)
-
-with c4:
-    st.markdown("""
-    <div class="service-card">
-    ❄️<br><br>
-    AC Repair
-    </div>
-    """, unsafe_allow_html=True)
-
-st.write("")
-
-st.markdown('<div class="form-box">', unsafe_allow_html=True)
-
-st.subheader("Get Free Quote")
-
-service = st.selectbox(
-    "Service Required",
-    [
-        "Electrician",
-        "Plumber",
-        "Carpenter",
-        "AC Repair",
-        "Painter",
-        "Cleaning"
-    ]
-)
-
-col1,col2 = st.columns(2)
-
-with col1:
     name = st.text_input("Full Name")
 
-with col2:
     mobile = st.text_input("Mobile Number")
 
-city = st.text_input("City")
+    city = st.text_input("City")
 
-requirement = st.text_area(
-    "Describe Your Requirement",
-    height=120
-)
+    requirement = st.text_area(
+        "Describe Your Requirement"
+    )
 
-submit = st.button(
-    "🚀 Get Free Quotes",
-    use_container_width=True
-)
+    submit = st.form_submit_button(
+        "🚀 Get Free Quotes"
+    )
 
-st.markdown("</div>", unsafe_allow_html=True)
-
-# -------------------
-# SAVE LEAD
-# -------------------
-
+# -----------------------------
+# SAVE DATA
+# -----------------------------
 if submit:
 
-    if not name or not mobile or not city:
+    if not name:
+        st.error("Please enter name")
 
-        st.error("Please fill all mandatory fields.")
+    elif not mobile:
+        st.error("Please enter mobile number")
+
+    elif len(mobile) != 10:
+        st.error("Mobile number must be 10 digits")
 
     else:
-        # Debug: Show captured values
-        with st.expander("📋 Debug - Captured Values"):
-            st.write(f"Date: {datetime.now().strftime('%d-%m-%Y %H:%M')}")
-            st.write(f"Service: {service}")
-            st.write(f"Name: {name}")
-            st.write(f"Mobile: {mobile}")
-            st.write(f"City: {city}")
-            st.write(f"Requirement: {requirement}")
 
-        lead = pd.DataFrame([{
-            "Date":datetime.now().strftime("%d-%m-%Y %H:%M"),
-            "Service":service,
-            "Name":name,
-            "Mobile":mobile,
-            "City":city,
-            "Requirement":requirement,
-            "Status":"New"
-        }])
+        cursor.execute("""
+        INSERT INTO leads (
+            created_at,
+            service,
+            name,
+            mobile,
+            city,
+            requirement,
+            status
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            datetime.now().strftime("%d-%m-%Y %H:%M"),
+            service,
+            name,
+            mobile,
+            city,
+            requirement,
+            "New"
+        ))
 
-        try:
-            csv_exists = os.path.exists(CSV_FILE_PATH)
-            lead.to_csv(
-                CSV_FILE_PATH,
-                mode="a",
-                index=False,
-                header=not csv_exists
-            )
+        conn.commit()
 
-            st.success(
-                "✅ Request Submitted Successfully. We will contact you shortly."
-            )
-            st.info(f"Your request has been saved to {CSV_FILE_PATH}")
-        except Exception as e:
-            st.error(f"Error saving data: {str(e)}")
+        st.success(
+            "✅ Thank you! Your request has been submitted."
+        )
 
-# -------------------
-# TRUST SECTION
-# -------------------
+# -----------------------------
+# ADMIN PANEL
+# -----------------------------
+st.divider()
 
-st.write("")
-st.write("")
+st.subheader("📋 All Leads")
 
-a,b,c = st.columns(3)
+try:
+    leads = pd.read_sql_query(
+        "SELECT * FROM leads ORDER BY id DESC",
+        conn
+    )
 
-with a:
-    st.metric("Verified Professionals", "500+")
+    st.dataframe(
+        leads,
+        use_container_width=True
+    )
 
-with b:
-    st.metric("Customers Served", "10,000+")
+    st.write(f"Total Leads: {len(leads)}")
 
-with c:
-    st.metric("Cities Covered", "15+")
+except Exception as e:
+    st.error(str(e))
 
-st.write("")
-st.write("")
+# -----------------------------
+# DOWNLOAD
+# -----------------------------
+if 'leads' in locals():
 
-st.markdown(
-"""
-<center>
-© 2026 FixMyHome
-</center>
-""",
-unsafe_allow_html=True
-)
+    csv = leads.to_csv(index=False)
+
+    st.download_button(
+        "⬇ Download Leads CSV",
+        csv,
+        file_name="FixMyHome_Leads.csv",
+        mime="text/csv"
+    )
