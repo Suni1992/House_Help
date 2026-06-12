@@ -6,7 +6,45 @@ import streamlit as st
 
 # Get the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-CSV_FILE_PATH = os.path.join(SCRIPT_DIR, "leads.csv")
+CANONICAL_CSV_FILE_PATH = os.path.join(SCRIPT_DIR, "leads.csv")
+LEGACY_CSV_FILE_PATH = os.path.join(SCRIPT_DIR, "lead.csv")
+
+
+def migrate_legacy_csv():
+    """Migrate data from legacy lead.csv to canonical leads.csv."""
+    if not os.path.exists(LEGACY_CSV_FILE_PATH):
+        return CANONICAL_CSV_FILE_PATH
+
+    if not os.path.exists(CANONICAL_CSV_FILE_PATH):
+        try:
+            os.replace(LEGACY_CSV_FILE_PATH, CANONICAL_CSV_FILE_PATH)
+            return CANONICAL_CSV_FILE_PATH
+        except Exception:
+            return CANONICAL_CSV_FILE_PATH
+
+    try:
+        legacy_df = pd.read_csv(LEGACY_CSV_FILE_PATH)
+    except Exception:
+        legacy_df = None
+
+    if legacy_df is not None and not legacy_df.empty:
+        try:
+            canonical_df = pd.read_csv(CANONICAL_CSV_FILE_PATH)
+            combined_df = pd.concat([canonical_df, legacy_df], ignore_index=True)
+            combined_df = combined_df.drop_duplicates()
+            combined_df.to_csv(CANONICAL_CSV_FILE_PATH, index=False)
+        except Exception:
+            pass
+
+    try:
+        os.remove(LEGACY_CSV_FILE_PATH)
+    except Exception:
+        pass
+
+    return CANONICAL_CSV_FILE_PATH
+
+
+CSV_FILE_PATH = migrate_legacy_csv()
 
 st.set_page_config(
     page_title="FixMyHome",
@@ -190,18 +228,13 @@ if submit:
         }])
 
         try:
-            if os.path.exists(CSV_FILE_PATH):
-                lead.to_csv(
-                    CSV_FILE_PATH,
-                    mode="a",
-                    header=False,
-                    index=False
-                )
-            else:
-                lead.to_csv(
-                    CSV_FILE_PATH,
-                    index=False
-                )
+            csv_exists = os.path.exists(CSV_FILE_PATH)
+            lead.to_csv(
+                CSV_FILE_PATH,
+                mode="a",
+                index=False,
+                header=not csv_exists
+            )
 
             st.success(
                 "✅ Request Submitted Successfully. We will contact you shortly."
