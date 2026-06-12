@@ -14,6 +14,12 @@ st.set_page_config(
     layout="wide"
 )
 
+# Debug sidebar
+with st.sidebar:
+    st.write("**Debug Info**")
+    st.write(f"CSV Path: {CSV_FILE_PATH}")
+    st.write(f"File exists: {os.path.exists(CSV_FILE_PATH)}")
+
 # -------------------
 # CSS
 # -------------------
@@ -164,6 +170,14 @@ if submit:
         st.error("Please fill all mandatory fields.")
 
     else:
+        # Debug: Show captured values
+        with st.expander("📋 Debug - Captured Values"):
+            st.write(f"Date: {datetime.now().strftime('%d-%m-%Y %H:%M')}")
+            st.write(f"Service: {service}")
+            st.write(f"Name: {name}")
+            st.write(f"Mobile: {mobile}")
+            st.write(f"City: {city}")
+            st.write(f"Requirement: {requirement}")
 
         lead = pd.DataFrame([{
             "Date":datetime.now().strftime("%d-%m-%Y %H:%M"),
