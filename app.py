@@ -4,6 +4,10 @@ from datetime import datetime
 import pandas as pd
 import streamlit as st
 
+# Get the directory where this script is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+CSV_FILE_PATH = os.path.join(SCRIPT_DIR, "leads.csv")
+
 st.set_page_config(
     page_title="FixMyHome",
     page_icon="🏠",
@@ -171,18 +175,16 @@ if submit:
             "Status":"New"
         }])
 
-        file_name = "leads.csv"
-
-        if os.path.exists(file_name):
+        if os.path.exists(CSV_FILE_PATH):
             lead.to_csv(
-                file_name,
+                CSV_FILE_PATH,
                 mode="a",
                 header=False,
                 index=False
             )
         else:
             lead.to_csv(
-                file_name,
+                CSV_FILE_PATH,
                 index=False
             )
 
