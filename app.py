@@ -122,7 +122,7 @@ def load_google_sheets_credentials():
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
     # 1. Prefer JSON content from an environment variable.
-    account_json = os.getenv("massive-period-472206-a7-a686fb847cb6.json")
+    account_json = service_account
 
     # 2. Fallback to a JSON file in the workspace.
     if not account_json:
